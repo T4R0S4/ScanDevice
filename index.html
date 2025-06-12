@@ -3,52 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Device Scanner</title>
+  <title>Scan Info Perangkat</title>
   <style>
+    :root {
+      --primary: #66a6ff;
+      --gradient: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
-      overflow: hidden;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background: var(--gradient);
     }
 
     h1 {
-      color: #fff;
-      font-size: 2.5em;
-      margin-bottom: 20px;
+      color: white;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      margin-bottom: 1rem;
       animation: fadeInDown 1s ease-out;
+      text-align: center;
     }
 
     button {
-      padding: 12px 25px;
-      font-size: 18px;
-      background-color: #fff;
-      color: #66a6ff;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      background: white;
+      color: var(--primary);
       border: none;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       cursor: pointer;
       transition: all 0.3s ease;
       animation: fadeInUp 1s ease-out;
     }
 
     button:hover {
-      background-color: #66a6ff;
-      color: #fff;
+      background: var(--primary);
+      color: white;
     }
 
     #output {
-      margin-top: 30px;
-      padding: 25px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      width: 90%;
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
       max-width: 600px;
       opacity: 0;
       transform: translateY(20px);
@@ -64,16 +77,17 @@
       white-space: pre-wrap;
       word-wrap: break-word;
       font-family: 'Courier New', Courier, monospace;
+      font-size: 0.95rem;
       color: #333;
     }
 
     #device-image {
       width: 100%;
-      max-width: 250px;
-      display: block;
-      margin: 0 auto 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      max-height: 250px;
+      object-fit: contain;
+      margin-bottom: 1rem;
+      border-radius: var(--radius);
+      background: #f0f0f0;
     }
 
     @keyframes fadeInDown {
@@ -88,32 +102,21 @@
   </style>
 </head>
 <body>
-  <h1>Scan Device Info</h1>
+
+  <h1>Scan Info Perangkat</h1>
   <button onclick="scanDevice()">Scan Device</button>
-  <div id="output"></div>
+
+  <div id="output">
+    <img id="device-image" src="" alt="Gambar Perangkat" hidden>
+    <div id="device-info"></div>
+  </div>
 
   <script>
-    async function searchRealDeviceImage(userAgent) {
-      const regex = /(iPhone|iPad|Samsung|Xiaomi|Redmi|Realme|Vivo|Oppo|Huawei|Pixel|Nokia|OnePlus|Motorola|Infinix|Tecno|Lenovo)[^;\)]*/i;
-      const match = userAgent.match(regex);
-      const deviceName = match ? match[0] : 'smartphone';
-
-      const query = encodeURIComponent(deviceName + ' smartphone');
-      const response = await fetch(`https://api.duckduckgo.com/?q=${query}&format=json&pretty=1`);
-      const data = await response.json();
-
-      let imageUrl = '';
-      if (data.Image) {
-        imageUrl = data.Image;
-      } else if (data.RelatedTopics?.length > 0 && data.RelatedTopics[0].Icon?.URL) {
-        imageUrl = data.RelatedTopics[0].Icon.URL;
-      }
-
-      return imageUrl || 'https://via.placeholder.com/200x300?text=No+Image';
-    }
-
     async function scanDevice() {
       const output = document.getElementById('output');
+      const infoDiv = document.getElementById('device-info');
+      const image = document.getElementById('device-image');
+
       const userAgent = navigator.userAgent;
 
       const deviceInfo = {
@@ -128,16 +131,37 @@
         'CPU Threads': navigator.hardwareConcurrency + ' threads'
       };
 
-      const imageUrl = await searchRealDeviceImage(userAgent);
+      // Deteksi nama perangkat
+      let model = 'Smartphone';
+      if (userAgent.includes("iPhone")) model = "iPhone";
+      else if (userAgent.includes("iPad")) model = "iPad";
+      else if (userAgent.includes("Macintosh")) model = "Mac";
+      else if (userAgent.includes("Windows")) model = "Windows PC";
+      else if (userAgent.includes("Android")) model = "Android Phone";
 
-      const formatted = JSON.stringify(deviceInfo, null, 2);
-      output.innerHTML = `
-        <img id="device-image" src="${imageUrl}" alt="Device Image" />
-        <h3>Informasi Device:</h3>
-        <pre>${formatted}</pre>
-      `;
+      // Ambil gambar perangkat dari Bing Images API
+      try {
+        const apiKey = 'YOUR_BING_API_KEY';
+        const response = await fetch(`https://api.bing.microsoft.com/v7.0/images/search?q=${encodeURIComponent(model)}&count=1`, {
+          headers: {
+            'Ocp-Apim-Subscription-Key': apiKey
+          }
+        });
+        const data = await response.json();
+        if (data.value && data.value.length > 0) {
+          image.src = data.value[0].thumbnailUrl;
+          image.hidden = false;
+        }
+      } catch (error) {
+        console.warn("Gagal memuat gambar perangkat.", error);
+        image.hidden = true;
+      }
+
+      const formatted = Object.entries(deviceInfo).map(([key, value]) => `${key}: ${value}`).join('\n');
+      infoDiv.innerHTML = `<h3>Informasi Device:</h3><pre>${formatted}</pre>`;
       output.classList.add('visible');
     }
   </script>
+
 </body>
 </html>
